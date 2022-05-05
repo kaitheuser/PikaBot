@@ -19,6 +19,7 @@ PFont f;              // Global font
 int colorVal = 255;   // Background color value (white)
 Page currPage;        // Reference to current Page
 SoundFile[] songs;    // Global reference to music SoundFiles
+SoundFile pikaSound;  // 
 int totalFrames = 25; // Total number of frames for animated GIF
 float counter = 0;    // Frame counter.
 //-----------------------End of global variables-----------------------//
@@ -30,8 +31,8 @@ float counter = 0;    // Frame counter.
   */
 void setup()
 {
-  //String portName = Serial.list()[0]; //Change the 0 to a 1 or 2 etc. to match your port -- usually the default works.
-  //myPort = new Serial(this, portName, 9600); //Make sure that the baudrate (default: 9600) matches that of the Arduino.
+  String portName = Serial.list()[2]; //Change the 0 to a 1 or 2 etc. to match your port -- usually the default works.
+  myPort = new Serial(this, portName, 9600); //Make sure that the baudrate (default: 9600) matches that of the Arduino.
   
   // set window size
   size(640, 480);
@@ -55,6 +56,8 @@ void setup()
     new SoundFile(this, "Elvis_Presley_-_Cant_Help_Falling_In_Love.wav")
   };
   
+  pikaSound = new SoundFile(this, "pika pika.mp3");
+  
   // set up global font  
   f = createFont("Courier New", 16, true);
   textFont(f);
@@ -68,7 +71,8 @@ void setup()
   */
 void draw()
 {
-    currPage.render(); 
+    currPage.render();
+    detectPika();
 }
 
 
@@ -98,6 +102,29 @@ void keyPressed() {
 }
 //------------End of Built-in Processing methods to implement----------//
 
+
+//
+void detectPika() {
+    if ( myPort.available() > 0) //This checks to see if the port in the setup is available.
+  {
+    val = myPort.readStringUntil('\n'); //Read in the value from the serial port.
+    
+    if (val != null){            // Note that this processing script runs asynchronously from the Arduino's transmission rate.
+                                 // Thus, when Processing looks in the serial buffer, there is a chance that the value stored 
+                                 // in "val" might contain nothing.
+                                 
+                                 // Note that the Arduino sends one LINE at a time, rather than individual variables. Thus, you will
+                                 // need a way to parse the incoming data.
+                                 
+      fval = int(trim(val));     // This is how you convert the string to a usable (int) number.
+     
+      // If the value is 1, play the "Pika" sound effect.
+      if (fval == 1) {
+        pikaSound.play();
+      }
+    }
+  }
+}
 
 //----------------Helper methods for constructing pages----------------//
 /**
@@ -330,10 +357,14 @@ class Screen extends Page {
       (imageScaleFactor - 2) * (width / imageScaleFactor),
       (imageScaleFactor - 2) * (height / imageScaleFactor)
       );
+      textFont(f,20);
+      fill(0); 
+      text("Come dance with Pikabot!",110,450);   
       counter = counter + 0.2;
       if (counter >= totalFrames){
         counter = 0.0;
       }
+      turnServo();
     } else {
       image(img,
       width / imageScaleFactor,
@@ -354,6 +385,8 @@ class Screen extends Page {
     if (nextPageIndex < pages.length) {    // check bounds
       if (currPage instanceof Screen && ((Screen)currPage).playMusic) {
         songs[this.musicIndex].stop();
+        println("Servo Must Not Move!");
+        myPort.write('0');
       }
       currPage = pages[nextPageIndex];
       if (currPage instanceof Screen && ((Screen)currPage).playMusic) {
@@ -380,6 +413,7 @@ class Screen extends Page {
     */
   void onEnter() {
     if (playMusic) playMusic(musicIndex);
+    if ( playMusic && currPage == pages[4] ) turnServo();
   }
   
   
@@ -390,10 +424,9 @@ class Screen extends Page {
     if(musicIndex > -1) songs[musicIndex].play();
   }
   
-  
-  // TODO: turn the servo
+  // Turn the servo
   void turnServo() {
-    println("turning servo");
+    myPort.write('1');
   }
 }
 //-----------------------End of Class definitions------------------------//
