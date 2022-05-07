@@ -5,6 +5,7 @@
   * Menu, and Screen class to implement the different menu and general
   * screens that the user navigates through. This code is used in
   * parallel with Arduino to control the Pikabot's hardware behaviors.
+  *
   */
 
 import processing.serial.*;
@@ -19,7 +20,7 @@ PFont f;              // Global font
 int colorVal = 255;   // Background color value (white)
 Page currPage;        // Reference to current Page
 SoundFile[] songs;    // Global reference to music SoundFiles
-SoundFile pikaSound;  // 
+SoundFile pikaSound;  // The sound effect file for when touching -> "pika pika"
 int totalFrames = 25; // Total number of frames for animated GIF
 float counter = 0;    // Frame counter.
 //-----------------------End of global variables-----------------------//
@@ -45,6 +46,7 @@ void setup()
     constructScreenPutToy(),
     constructScreenPlayToy()
   };
+  
   // set current page to be the first
   currPage = pages[0];
   
@@ -56,6 +58,7 @@ void setup()
     new SoundFile(this, "Elvis_Presley_-_Cant_Help_Falling_In_Love.wav")
   };
   
+  // set up the sound upon touch
   pikaSound = new SoundFile(this, "pika pika.mp3");
   
   // set up global font  
@@ -66,13 +69,14 @@ void setup()
 
 
 /**
-  * Implements draw method abstracted to a simple class and method to render
-  * the current page.
+  * Implements draw method abstracted to a simple class (Page) and method (render)
+  * to display the current page. Also detects if the touch sensor has been touched
+  * at any point in time to play the sound "pika pika."
   */
 void draw()
 {
-    currPage.render();
-    detectPika();
+    currPage.render();    // each Menu or Screen will have its own render method
+    detectTouch();        // detects whether the capacitive sensor has been touched
 }
 
 
@@ -94,37 +98,36 @@ void keyPressed() {
     }
   }
   
-  // TODO: test enter function. Replace with touch functionality once done.
+  // if the ENTER key is pressed, navigate to next page
   if (keyCode == ENTER) {
-    println("navigate called!");
     currPage.navigate();
   }
 }
 //------------End of Built-in Processing methods to implement----------//
 
 
-//
-void detectPika() {
-    if ( myPort.available() > 0) //This checks to see if the port in the setup is available.
+//------------------------General helper methods-----------------------//
+/**
+  * Helper method for detecting touch. Reads signals from the connected
+  * Arduino and plays the "pika pika" sound for every touch.
+  */
+void detectTouch() {
+  if ( myPort.available() > 0) // checks to see if the port in the setup is available
   {
-    val = myPort.readStringUntil('\n'); //Read in the value from the serial port.
+    val = myPort.readStringUntil('\n'); // read in the value from the serial port
     
-    if (val != null){            // Note that this processing script runs asynchronously from the Arduino's transmission rate.
-                                 // Thus, when Processing looks in the serial buffer, there is a chance that the value stored 
-                                 // in "val" might contain nothing.
-                                 
-                                 // Note that the Arduino sends one LINE at a time, rather than individual variables. Thus, you will
-                                 // need a way to parse the incoming data.
-                                 
-      fval = int(trim(val));     // This is how you convert the string to a usable (int) number.
+    if (val != null) {                                 
+      fval = int(trim(val));     // convert the string to an int
      
-      // If the value is 1, play the "Pika" sound effect.
+      // If the value is 1, play the "Pika pika" sound effect.
       if (fval == 1) {
         pikaSound.play();
       }
     }
   }
 }
+//---------------------End of general helper methods-------------------//
+
 
 //----------------Helper methods for constructing pages----------------//
 /**
@@ -171,7 +174,7 @@ Menu constructMenuMusicType() {
 Screen constructScreenPlayMusic() {
   boolean playMusic = true;
   String id = "play_music";
-  int nextPageIndex = 0;
+  int nextPageIndex = 0;    // Set next page as the main screen
   return new Screen(id, nextPageIndex, "music notes.jpg", colorVal, playMusic);
 }
 
@@ -190,7 +193,10 @@ Screen constructScreenPutToy() {
 
 
 /**
-  * TODO: Helper method for constructing the playing toy with user screen.
+  * Helper method for constructing the play toy screen. On this screen,
+  * music will play, and the servo will turn the Pikabot around back and
+  * forth as if it's playing the toy. A touch from the user leads them
+  * to back to the main menu.
   */
 Screen constructScreenPlayToy() {
   boolean playToy = true;
@@ -208,8 +214,11 @@ Screen constructScreenPlayToy() {
   * a general screen page.
   *****************************************************************************/
 abstract class Page {
-  String id;
+  String id;                                // generic string id for identification (unused)
 
+  /**
+    * Constructor
+    */
   Page(String id) {
     this.id = id;
   }
@@ -348,29 +357,42 @@ class Screen extends Page {
     * Implements the render method. Simple as putting an image on the screen.
     */
   void render() {
-    background(colorVal);
-    if (currPage == pages[4]){
+    // clears screen
+    background(colorVal);    
+    
+    if (currPage == pages[4]) {     // for the playing toy page
       
-      image(loadImage("dancePika/Pikabot-" + nf(int(counter), 2) + ".png"),
-      width / imageScaleFactor,
-      height / imageScaleFactor,
-      (imageScaleFactor - 2) * (width / imageScaleFactor),
-      (imageScaleFactor - 2) * (height / imageScaleFactor)
+      // place the Pikachu dancing up and down gif
+      image(
+        loadImage("dancePika/Pikabot-" + nf(int(counter), 2) + ".png"),
+        width / imageScaleFactor,
+        height / imageScaleFactor,
+        (imageScaleFactor - 2) * (width / imageScaleFactor),
+        (imageScaleFactor - 2) * (height / imageScaleFactor)
       );
+      
+      // set up font and text
       textFont(f,20);
       fill(0); 
-      text("Come dance with Pikabot!",110,450);   
+      text("Come dance with Pikabot!",110,450);
+      
+      // for displaying the looped gif animation correctly
       counter = counter + 0.2;
       if (counter >= totalFrames){
         counter = 0.0;
       }
+      
+      // turn the servo at the same time
       turnServo();
-    } else {
-      image(img,
-      width / imageScaleFactor,
-      height / imageScaleFactor,
-      (imageScaleFactor - 2) * (width / imageScaleFactor),
-      (imageScaleFactor - 2) * (height / imageScaleFactor)
+    } else {                        // for the play music page
+      
+      // place the music notes image on the screen
+      image(
+        img,
+        width / imageScaleFactor,
+        height / imageScaleFactor,
+        (imageScaleFactor - 2) * (width / imageScaleFactor),
+        (imageScaleFactor - 2) * (height / imageScaleFactor)
       );
     }
     
@@ -385,13 +407,15 @@ class Screen extends Page {
     if (nextPageIndex < pages.length) {    // check bounds
       if (currPage instanceof Screen && ((Screen)currPage).playMusic) {
         songs[this.musicIndex].stop();
-        println("Servo Must Not Move!");
-        myPort.write('0');
+        myPort.write('0');                 // writes a '0' to the Arduino
+                                           // to stop the servo from turning
       }
+      
       currPage = pages[nextPageIndex];
       if (currPage instanceof Screen && ((Screen)currPage).playMusic) {
         ((Screen)currPage).setMusicIndex(this.musicIndex);
       }
+      
       currPage.onEnter();
     } else {
       println("page not implemented!");
@@ -424,7 +448,10 @@ class Screen extends Page {
     if(musicIndex > -1) songs[musicIndex].play();
   }
   
-  // Turn the servo
+  /**
+    * Turns the servo on the connected Arduino by sending a '1'. The Arduino
+    * code will handle this.
+    */
   void turnServo() {
     myPort.write('1');
   }
