@@ -5,6 +5,6 @@ PikaBot is a social companion robot prototype that is built for both the elderly
 
 [![PikaBot Demonstration Video](https://img.youtube.com/vi/YDTyF7I5aXk/3.jpg)](https://www.youtube.com/watch?v=YDTyF7I5aXk)
 
-<iframe  title="YouTube video player" width="480" height="390" src="https://www.youtube.com/watch?v=YDTyF7I5aXk" frameborder="0" allowfullscreen></iframe>
-
-with a **youtube** video embedded
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=YDTyF7I5aXk" target="_blank">
+ <img src="http://img.youtube.com/vi/YDTyF7I5aXk/mqdefault.jpg" alt="Watch the video" width="240" height="180" border="10" />
+</a>
