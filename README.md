@@ -1,4 +1,4 @@
 # PikaBot
 A Cute and Friendly Personal Companion Prototype
 -------------------------------------------------
-[![PikaBot Demonstration Video]](https://www.youtube.com/watch?v=YDTyF7I5aXk)
+![PikaBot Demonstration Video](CSE276D_Lab4_PikaBot_Demo_Compressed.mp4)
